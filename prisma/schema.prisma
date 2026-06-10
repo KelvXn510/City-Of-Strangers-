@@ -1,0 +1,471 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String     @id @default(cuid())
+  email                 String     @unique
+  emailVerified         DateTime?
+  hashedPassword        String
+  role                  UserRole   @default(USER)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  lastLoginAt           DateTime?
+  isActive              Boolean    @default(true)
+  isSuspended           Boolean    @default(false)
+  isBanned              Boolean    @default(false)
+
+  // Relations
+  stories               Story[]
+  courtCases            CourtCase[]
+  courtOpinions         CourtOpinion[]
+  predictions           Prediction[]
+  formerSelves          FormerSelf[]
+  favorites             Favorite[]
+  reports               Report[]
+  reportedByUsers       Report[]    @relation("ReportedBy")
+  notifications         Notification[]
+  adminLogs             AdminLog[]
+  aiInsights            AIInsight[]
+
+  @@index([email])
+  @@index([role])
+  @@index([isSuspended])
+  @@index([isBanned])
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model District {
+  id                    String     @id @default(cuid())
+  name                  String     @unique
+  slug                  String     @unique
+  description           String     @db.Text
+  type                  DistrictType
+  themeColor            String     @default("#64748b")
+  icon                  String     @default("MapPin")
+  order                  Int        @default(0)
+  isActive              Boolean    @default(true)
+  isVisible             Boolean    @default(true)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  customFields          Json?      // For dynamic submission fields
+
+  // Relations
+  stories               Story[]
+  courtCases            CourtCase[]
+  predictions           Prediction[]
+  formerSelves          FormerSelf[]
+  highlights            FeaturedContent[]
+
+  @@index([slug])
+  @@index([type])
+  @@index([isActive])
+}
+
+enum DistrictType {
+  LIBRARY_UNSENT_CONVERSATIONS
+  MUSEUM_ALMOST
+  COURT_DECISIONS
+  CEMETERY_FORMER_SELVES
+  OBSERVATORY
+  CUSTOM
+}
+
+model Story {
+  id                    String     @id @default(cuid())
+  userId                String
+  districtId            String
+  title                 String
+  content               String     @db.Text
+  category              String?
+  summary               String?    @db.Text
+  emotionalTags         String[]   @default([])
+  topicClassification   String?
+  status                ContentStatus @default(PENDING_REVIEW)
+  isFeatured            Boolean    @default(false)
+  viewCount             Int        @default(0)
+  saveCount             Int        @default(0)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  publishedAt           DateTime?
+  archivedAt            DateTime?
+
+  // Relations
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  district              District   @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  tags                  StoryTag[]
+  favorites             Favorite[]
+  reports               Report[]
+  aiInsights            AIInsight[]
+  movedFrom             String?    // Track if moved from another district
+
+  @@index([userId])
+  @@index([districtId])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([createdAt])
+}
+
+model StoryTag {
+  id                    String     @id @default(cuid())
+  storyId               String
+  name                  String
+  value                 String?
+
+  // Relations
+  story                 Story      @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@index([storyId])
+  @@index([name])
+}
+
+model CourtCase {
+  id                    String     @id @default(cuid())
+  userId                String
+  districtId            String
+  title                 String
+  situation             String     @db.Text
+  question              String     @db.Text
+  context               String?    @db.Text
+  status                CaseStatus @default(OPEN)
+  verdict               CourtVerdict?
+  openedAt              DateTime   @default(now())
+  closesAt              DateTime
+  closedAt              DateTime?
+  isFeatured            Boolean    @default(false)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  // Relations
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  district              District   @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  opinions              CourtOpinion[]
+  reports               Report[]
+
+  @@index([userId])
+  @@index([districtId])
+  @@index([status])
+  @@index([closesAt])
+}
+
+enum CaseStatus {
+  OPEN
+  CLOSED
+  FEATURED
+  REMOVED
+}
+
+model CourtOpinion {
+  id                    String     @id @default(cuid())
+  caseId                String
+  userId                String
+  opinion               String     @db.Text
+  questions             String[]   @default([])
+  votes                 Json?      // Store vote data
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  // Relations
+  case                  CourtCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([userId])
+}
+
+model CourtVerdict {
+  id                    String     @id @default(cuid())
+  caseId                String     @unique
+  logicalPerspective    String     @db.Text
+  emotionalPerspective  String     @db.Text
+  riskPerspective       String     @db.Text
+  optimisticPerspective String     @db.Text
+  longTermPerspective   String     @db.Text
+  aiModel               String?
+  generatedAt           DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  // Relations
+  case                  CourtCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+}
+
+model FormerSelf {
+  id                    String     @id @default(cuid())
+  userId                String
+  districtId            String
+  name                  String
+  reflection            String     @db.Text
+  buriedDate            DateTime
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  // Relations
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  district              District   @relation(fields: [districtId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([districtId])
+  @@index([buriedDate])
+}
+
+model Prediction {
+  id                    String     @id @default(cuid())
+  userId                String
+  districtId            String
+  title                 String
+  content               String     @db.Text
+  reminderDate          DateTime
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  reminderSentAt        DateTime?
+  isRevealed            Boolean    @default(false)
+
+  // Relations
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  district              District   @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  reminder              Reminder?
+
+  @@index([userId])
+  @@index([districtId])
+  @@index([reminderDate])
+  @@index([isRevealed])
+}
+
+model Reminder {
+  id                    String     @id @default(cuid())
+  predictionId          String     @unique
+  userId                String?
+  status                ReminderStatus @default(PENDING)
+  scheduledFor          DateTime
+  sentAt                DateTime?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  // Relations
+  prediction            Prediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+model Favorite {
+  id                    String     @id @default(cuid())
+  userId                String
+  storyId               String
+  createdAt             DateTime   @default(now())
+
+  // Relations
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story                 Story      @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+  @@index([userId])
+  @@index([storyId])
+}
+
+enum ContentStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+  REMOVED
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  HATE_SPEECH
+  THREATS
+  PERSONAL_INFORMATION
+  SELF_HARM_CONCERNS
+  MISINFORMATION
+  OTHER
+}
+
+model Report {
+  id                    String     @id @default(cuid())
+  storyId               String?
+  caseId                String?
+  userId                String     // User being reported
+  reportedById          String     // User making the report
+  reason                ReportReason
+  description           String?    @db.Text
+  status                ReportStatus @default(PENDING)
+  adminNotes            String?    @db.Text
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  reviewedAt            DateTime?
+  reviewedBy            String?
+
+  // Relations
+  story                 Story?     @relation(fields: [storyId], references: [id], onDelete: SetNull)
+  case                  CourtCase? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reportedBy            User       @relation("ReportedBy", fields: [reportedById], references: [id], onDelete: Cascade)
+
+  @@index([storyId])
+  @@index([caseId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+  UPHELD
+  ACTION_TAKEN
+}
+
+model AIInsight {
+  id                    String     @id @default(cuid())
+  storyId               String?
+  userId                String?
+  contentType           String
+  insights              Json       // Store various AI insights
+  emotionalAnalysis     Json?
+  flaggedContent        Boolean    @default(false)
+  flagReason            String?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  // Relations
+  story                 Story?     @relation(fields: [storyId], references: [id], onDelete: SetNull)
+  user                  User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([storyId])
+  @@index([userId])
+  @@index([flaggedContent])
+}
+
+model Notification {
+  id                    String     @id @default(cuid())
+  userId                String
+  type                  NotificationType
+  title                 String
+  message               String     @db.Text
+  relatedId             String?    // ID of related story/case/etc
+  isRead                Boolean    @default(false)
+  createdAt             DateTime   @default(now())
+  readAt                DateTime?
+
+  // Relations
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  CASE_VERDICT
+  CASE_CLOSED
+  REMINDER
+  CONTENT_FEATURED
+  REPORT_DECISION
+  SYSTEM_ALERT
+}
+
+model AdminLog {
+  id                    String     @id @default(cuid())
+  adminId               String
+  action                AdminAction
+  targetType            String
+  targetId              String
+  changes               Json?      // Store what was changed
+  reason                String?
+  createdAt             DateTime   @default(now())
+
+  // Relations
+  admin                 User       @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([action])
+  @@index([targetType])
+  @@index([createdAt])
+}
+
+enum AdminAction {
+  APPROVE_CONTENT
+  REJECT_CONTENT
+  DELETE_CONTENT
+  ARCHIVE_CONTENT
+  RESTORE_CONTENT
+  SUSPEND_USER
+  BAN_USER
+  UNBAN_USER
+  CREATE_DISTRICT
+  UPDATE_DISTRICT
+  DELETE_DISTRICT
+  FEATURE_CONTENT
+  UNFEATURE_CONTENT
+  REGENERATE_VERDICT
+  EDIT_CONTENT
+  MOVE_CONTENT
+}
+
+model FeaturedContent {
+  id                    String     @id @default(cuid())
+  districtId            String
+  title                 String
+  description           String?    @db.Text
+  order                  Int        @default(0)
+  isActive              Boolean    @default(true)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  // Relations
+  district              District   @relation(fields: [districtId], references: [id], onDelete: Cascade)
+
+  @@index([districtId])
+  @@index([isActive])
+}
+
+// Analytics models for tracking
+model DailyAnalytics {
+  id                    String     @id @default(cuid())
+  date                  DateTime   @unique
+  activeUsers           Int        @default(0)
+  newUsers              Int        @default(0)
+  storiesCreated        Int        @default(0)
+  casesCreated          Int        @default(0)
+  casesCompleted        Int        @default(0)
+  totalReports          Int        @default(0)
+  createdAt             DateTime   @default(now())
+
+  @@index([date])
+}
+
+model SearchTrend {
+  id                    String     @id @default(cuid())
+  term                  String
+  count                  Int        @default(1)
+  districtId            String?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  @@index([term])
+  @@index([districtId])
+}
