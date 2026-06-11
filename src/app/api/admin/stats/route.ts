@@ -1,9 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getAdminStats, getPendingContent, getReports, approveContent, rejectContent } from '@/utils/admin'
+import { getAdminStats } from '@/utils/admin'
 import { requireAdmin } from '@/utils/auth'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     await requireAdmin()
 

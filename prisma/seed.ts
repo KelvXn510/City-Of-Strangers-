@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, DistrictType } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -9,7 +9,7 @@ async function main() {
       name: 'Library of Unsent Conversations',
       slug: 'library-unsent-conversations',
       description: 'A collection of messages never sent. Words left unspoken. The conversations that exist only in our hearts.',
-      type: 'LIBRARY_UNSENT_CONVERSATIONS',
+      type: 'LIBRARY_UNSENT_CONVERSATIONS' as DistrictType,
       themeColor: '#8b5cf6',
       icon: 'BookOpen',
       order: 1,
@@ -21,7 +21,7 @@ async function main() {
       name: 'Museum of Almost',
       slug: 'museum-almost',
       description: 'Stories of the lives that almost happened. The alternate paths not taken. The "what ifs" that shaped who we became.',
-      type: 'MUSEUM_ALMOST',
+      type: 'MUSEUM_ALMOST' as DistrictType,
       themeColor: '#06b6d4',
       icon: 'Zap',
       order: 2,
@@ -30,7 +30,7 @@ async function main() {
       name: 'Court of Human Decisions',
       slug: 'court-decisions',
       description: 'Submit your dilemmas. Let the community weigh in. Receive an AI verdict from multiple perspectives.',
-      type: 'COURT_DECISIONS',
+      type: 'COURT_DECISIONS' as DistrictType,
       themeColor: '#ef4444',
       icon: 'Scale',
       order: 3,
@@ -39,7 +39,7 @@ async function main() {
       name: 'Cemetery of Former Selves',
       slug: 'cemetery-former-selves',
       description: 'Bury who you used to be. Honor the versions of yourself that have passed. Digital gravestones for transformation.',
-      type: 'CEMETERY_FORMER_SELVES',
+      type: 'CEMETERY_FORMER_SELVES' as DistrictType,
       themeColor: '#6b7280',
       icon: 'Tombstone',
       order: 4,
@@ -48,7 +48,7 @@ async function main() {
       name: 'Observatory',
       slug: 'observatory',
       description: 'Write predictions about your future. Leave messages for yourself. Set reminders to see if you were right.',
-      type: 'OBSERVATORY',
+      type: 'OBSERVATORY' as DistrictType,
       themeColor: '#a78bfa',
       icon: 'Telescope',
       order: 5,

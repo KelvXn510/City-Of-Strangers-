@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
-    const result = await resetPassword(email)
+    await resetPassword(email)
 
     return NextResponse.json(
       { message: 'Password reset email sent' },

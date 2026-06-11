@@ -1,19 +1,26 @@
-import { createServerClient, parseCookieHeader, serializeCookieHeader } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import type { Database } from './supabase'
 
 export const createSupabaseServerClient = () => {
-  const cookieHeader = process.env.SUPABASE_COOKIE_HEADER || ''
+  const cookieStore = cookies()
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
     {
       cookies: {
-        getAll: () => parseCookieHeader(cookieHeader),
+        getAll: () => {
+          return cookieStore.getAll()
+        },
         setAll: (cookiesToSet) => {
-          cookiesToSet.forEach((cookie) => {
-            // Handle cookie setting in server context
-          })
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set({ name, value, ...options })
+            })
+          } catch (error) {
+            // Ignored if called from a server component
+          }
         },
       },
     },

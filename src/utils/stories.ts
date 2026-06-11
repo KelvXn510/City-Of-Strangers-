@@ -101,8 +101,8 @@ export async function searchStories(query: string, districtId?: string) {
         districtId ? { districtId } : {},
         {
           OR: [
-            { title: { search: query } },
-            { content: { search: query } },
+            { title: { contains: query, mode: 'insensitive' } },
+            { content: { contains: query, mode: 'insensitive' } },
             { emotionalTags: { hasSome: [query] } },
           ],
         },
@@ -110,7 +110,7 @@ export async function searchStories(query: string, districtId?: string) {
       ],
     },
     take: 50,
-    orderBy: [{ _relevance: { fields: ['title'], search: query, sort: 'desc' } }],
+    orderBy: { createdAt: 'desc' },
   })
 }
 

@@ -1,7 +1,8 @@
-import { supabase } from './supabase'
-import { prisma } from './prisma'
+import { createSupabaseServerClient } from '../lib/supabase-server'
+import { prisma } from '../lib/prisma'
 
 export async function getCurrentUser() {
+  const supabase = createSupabaseServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -35,9 +36,12 @@ export async function requireAdmin() {
   if (!isAdmin) {
     throw new Error('Admin access required')
   }
+  const user = await getCurrentUser()
+  return user!
 }
 
 export async function signUp(email: string, password: string) {
+  const supabase = createSupabaseServerClient()
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -61,6 +65,7 @@ export async function signUp(email: string, password: string) {
 }
 
 export async function signIn(email: string, password: string) {
+  const supabase = createSupabaseServerClient()
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -80,17 +85,20 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signOut() {
+  const supabase = createSupabaseServerClient()
   const { error } = await supabase.auth.signOut()
   if (error) throw error
 }
 
 export async function resetPassword(email: string) {
+  const supabase = createSupabaseServerClient()
   const { data, error } = await supabase.auth.resetPasswordForEmail(email)
   if (error) throw error
   return data
 }
 
 export async function updatePassword(newPassword: string) {
+  const supabase = createSupabaseServerClient()
   const { data, error } = await supabase.auth.updateUser({
     password: newPassword,
   })
