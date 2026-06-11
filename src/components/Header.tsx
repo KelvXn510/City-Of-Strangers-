@@ -2,8 +2,32 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 export default function Header() {
+  const [session, setSession] = useState<any>(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+  }
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/95 backdrop-blur supports-[backdrop-filter]:bg-slate-950/60">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
@@ -27,12 +51,30 @@ export default function Header() {
           >
             Submit
           </Link>
-          <Link
-            href="/auth/login"
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
-          >
-            Sign In
-          </Link>
+          
+          {session ? (
+            <div className="flex items-center gap-4">
+              <Link
+                href="/admin/dashboard"
+                className="text-slate-300 hover:text-slate-100 transition-colors"
+              >
+                Dashboard
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+            >
+              Sign In
+            </Link>
+          )}
         </nav>
       </div>
     </header>
