@@ -8,11 +8,13 @@ import { useRouter } from 'next/navigation'
 
 export default function Header() {
   const [session, setSession] = useState<any>(null)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
+      setMounted(true)
     })
 
     const {
@@ -52,7 +54,7 @@ export default function Header() {
             Submit
           </Link>
           
-          {session ? (
+          {mounted && session ? (
             <div className="flex items-center gap-4">
               <Link
                 href="/admin/dashboard"
