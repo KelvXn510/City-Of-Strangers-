@@ -35,7 +35,8 @@ export default function RegisterPage() {
         }),
       })
 
-      if (!response.ok) throw new Error('Registration failed')
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || 'Registration failed')
 
       toast.success('Welcome to the City! Please sign in.')
       router.push('/auth/login')
